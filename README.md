@@ -5,8 +5,8 @@
 Civil provides Date, Time of Day, and DateTime data types.
 
 While there are many uses, using specific types when working
-with databases make is conceptually eaiser to understand what value
-is set in the remote system.
+with databases and across system or geographic boundaries make it conceptually
+easier to understand what value is set in the remote system.
 
 ## Source
 
