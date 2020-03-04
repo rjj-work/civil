@@ -22,10 +22,13 @@
 package civil
 
 import (
+	"bytes"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 // A Date represents a date (year, month, day).
@@ -48,8 +51,13 @@ func DateOf(t time.Time) Date {
 // RFC3339Date is the civil date format of RFC3339
 const RFC3339Date = "2006-01-02"
 
+const dateZero = "0000-00-00"
+
 // ParseDate parses a string in RFC3339 full-date format and returns the date value it represents.
 func ParseDate(s string) (Date, error) {
+	if s == dateZero {
+		return Date{}, nil
+	}
 	t, err := time.Parse(RFC3339Date, s)
 	if err != nil {
 		return Date{}, err
@@ -146,7 +154,7 @@ func (d *Date) UnmarshalJSON(data []byte) error {
 	}
 	val, err := ParseDate(s)
 	if err != nil {
-		return fmt.Errorf("invalid date: %v", err)
+		return fmt.Errorf("invalid date, data: %s, err: %v", s, err)
 	}
 	*d = val
 	return nil
@@ -413,8 +421,32 @@ func (dt *DateTime) UnmarshalText(data []byte) error {
 	return err
 }
 
+var (
+	dateTimeZeroDatePrefix  = []byte(`"0000-00-00`)
+	dateTimeZeroDatePostfix = []byte(`"`)
+)
+
 // UnmarshalJSON implements encoding/json Unmarshaler interface
 func (dt *DateTime) UnmarshalJSON(data []byte) error {
+	if dt == nil {
+		return errors.New("nil receiver")
+	}
+	if tIdx := bytes.IndexAny(data, "Tt"); tIdx > 0 {
+		dataDate := data[:tIdx+1] // `"` to the `T`
+		dataDate[tIdx] = byte('"')
+		dataTime := data[tIdx:] // `T` to the end `"`
+		dataTime[0] = byte('"')
+
+		if err := dt.Date.UnmarshalJSON(dataDate); err != nil {
+			return errors.Wrapf(err, "date prefix (%s) in '%s' could not be converted", dataDate, data)
+		}
+		if err := dt.Time.UnmarshalJSON(dataTime); err != nil {
+			return errors.Wrapf(err, "time suffix (%s) in '%s' could not be converted", dataTime, data)
+		}
+		return nil
+	}
+
+	// If here, let the original code try to decode
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
 		return fmt.Errorf("datetime should be a string, got %s", data)
