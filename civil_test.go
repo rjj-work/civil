@@ -260,6 +260,41 @@ func TestTime_Scan_Time(t *testing.T) {
 	assert.Equal(t, *tm, Time{Hour: 3, Minute: 42, Second: 31, Nanosecond: 876})
 }
 
+/*
+	This will core:
+	$ go test -v -run TestDateTime_Nil
+	=== RUN   TestDateTime_Nil
+	--- FAIL: TestDateTime_Nil (0.00s)
+	panic: runtime error: invalid memory address or nil pointer dereference [recovered]
+		panic: runtime error: invalid memory address or nil pointer dereference
+	[signal SIGSEGV: segmentation violation code=0x1 addr=0x0 pc=0x12b420f]
+
+	goroutine 7 [running]:
+	testing.tRunner.func1(0xc000100100)
+		/usr/local/opt/go/libexec/src/testing/testing.go:874 +0x3a3
+	panic(0x1305780, 0x15d2df0)
+		/usr/local/opt/go/libexec/src/runtime/panic.go:679 +0x1b2
+	github.com/openlyinc/civil.(*DateTime).UnmarshalJSON(0x0, 0xc0000183c0, 0x1f, 0x1f, 0x499014a0a110, 0x33ac7c30)
+		/Users/rjj/dev/go/src/github.com/rjj-work/Openly/civil/civil.go:436 +0xff
+	github.com/openlyinc/civil.TestDateTime_Nil(0xc000100100)
+		/Users/rjj/dev/go/src/github.com/rjj-work/Openly/civil/civil_test.go:268 +0x74
+	testing.tRunner(0xc000100100, 0x137e770)
+		/usr/local/opt/go/libexec/src/testing/testing.go:909 +0xc9
+	created by testing.(*T).Run
+		/usr/local/opt/go/libexec/src/testing/testing.go:960 +0x350
+	exit status 2
+	FAIL	github.com/openlyinc/civil	0.131s
+*/
+func TestDateTime_Nil(t *testing.T) {
+	goodJSON := []byte(`"2020-02-29T03:42:31.000000876"`)
+
+	var dt *DateTime
+
+	err := dt.UnmarshalJSON(goodJSON)
+	if err != nil {
+		t.Fatalf("input: %s, err: %v", goodJSON, err)
+	}
+}
 func TestDateTime_MarshalJSON(t *testing.T) {
 
 	datetime := DateTime{
