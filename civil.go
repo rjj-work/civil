@@ -51,10 +51,10 @@ func DateOf(t time.Time) Date {
 // RFC3339Date is the civil date format of RFC3339
 const RFC3339Date = "2006-01-02"
 
-const dateZero = "0000-00-00"
-
 // ParseDate parses a string in RFC3339 full-date format and returns the date value it represents.
 func ParseDate(s string) (Date, error) {
+	const dateZero = "0000-00-00"
+
 	if s == dateZero {
 		return Date{}, nil
 	}
@@ -420,11 +420,6 @@ func (dt *DateTime) UnmarshalText(data []byte) error {
 	*dt, err = ParseDateTime(string(data))
 	return err
 }
-
-var (
-	dateTimeZeroDatePrefix  = []byte(`"0000-00-00`)
-	dateTimeZeroDatePostfix = []byte(`"`)
-)
 
 // UnmarshalJSON implements encoding/json Unmarshaler interface
 func (dt *DateTime) UnmarshalJSON(data []byte) error {
