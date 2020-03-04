@@ -132,7 +132,7 @@ func TestDate_UnmarshalJSON(t *testing.T) {
 	jsonInvalid := []byte(`"2020-13-40"`)
 	dInvalid := &Date{}
 	err = dInvalid.UnmarshalJSON(jsonInvalid)
-	assert.EqualError(t, err, "invalid date, data: 2020-13-40, err: parsing time \"2020-13-40\": month out of range")
+	assert.NotNil(t, err)
 }
 
 func TestDate_AddMonths(t *testing.T) {

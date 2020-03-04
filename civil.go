@@ -154,7 +154,7 @@ func (d *Date) UnmarshalJSON(data []byte) error {
 	}
 	val, err := ParseDate(s)
 	if err != nil {
-		return fmt.Errorf("invalid date, data: %s, err: %v", s, err)
+		return errors.Wrapf(err, "invalid date: %s", s)
 	}
 	*d = val
 	return nil
@@ -423,35 +423,24 @@ func (dt *DateTime) UnmarshalText(data []byte) error {
 
 // UnmarshalJSON implements encoding/json Unmarshaler interface
 func (dt *DateTime) UnmarshalJSON(data []byte) error {
-	if dt == nil {
-		return errors.New("nil receiver")
-	}
-	if tIdx := bytes.IndexAny(data, "Tt"); tIdx > 0 {
-		dataDate := data[:tIdx+1] // `"` to the `T`
-		dataDate[tIdx] = byte('"')
-		dataTime := data[tIdx:] // `T` to the end `"`
-		dataTime[0] = byte('"')
-
-		if err := dt.Date.UnmarshalJSON(dataDate); err != nil {
-			return errors.Wrapf(err, "date prefix (%s) in '%s' could not be converted", dataDate, data)
-		}
-		if err := dt.Time.UnmarshalJSON(dataTime); err != nil {
-			return errors.Wrapf(err, "time suffix (%s) in '%s' could not be converted", dataTime, data)
-		}
-		return nil
+	tIdx := bytes.IndexAny(data, "Tt")
+	if tIdx < 10 {
+		return fmt.Errorf("data is not valid DateTime value: %s", string(data))
 	}
 
-	// If here, let the original code try to decode
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return fmt.Errorf("datetime should be a string, got %s", data)
+	dataDate := data[:tIdx+1] // `"` to the `T`
+	dataDate[tIdx] = byte('"')
+	dataTime := data[tIdx:] // `T` to the end `"`
+	dataTime[0] = byte('"')
+
+	if err := dt.Date.UnmarshalJSON(dataDate); err != nil {
+		return errors.Wrapf(err, "date prefix (%s) in '%s' could not be converted", dataDate, data)
 	}
-	val, err := ParseDateTime(s)
-	if err != nil {
-		return fmt.Errorf("invalid datetime: %v", err)
+	if err := dt.Time.UnmarshalJSON(dataTime); err != nil {
+		return errors.Wrapf(err, "time suffix (%s) in '%s' could not be converted", dataTime, data)
 	}
-	*dt = val
 	return nil
+
 }
 
 // MarshalJSON implements encoding/json Marshaler interface
